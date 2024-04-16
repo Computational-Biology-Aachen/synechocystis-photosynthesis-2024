@@ -57,7 +57,7 @@ def simulate_to_steady_state_custom(
             else:
                 diff = res.iloc[-1].loc[tol[0]] - res.iloc[-2].loc[tol[0]]
             if rel_norm:
-                diff = diff / res.iloc[-1].loc[tol[0]]
+                diff = diff / res.iloc[-1].loc[diff.index]
             if np.linalg.norm(diff.dropna(), ord=2) > tol[1]:
                 if verbose:
                     print("steady state not reached")
