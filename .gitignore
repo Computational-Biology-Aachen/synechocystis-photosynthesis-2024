@@ -5,6 +5,7 @@
 # ignore figures
 Figures/*
 Results/*
+out/*
 
 # ignore vscode files
 .vscode
