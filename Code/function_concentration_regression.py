@@ -40,9 +40,9 @@ from datetime import datetime
 from SMTPMailSender import SMTPMailSender
 
 # Set 
-max_workers = os.cpu_count() - 2
+max_workers = 100 # os.cpu_count() - 2
 file_prefix = f"concregression_{datetime.now().strftime('%Y%m%d%H%M')}"
-n_points = 2
+n_points = 10
 
 # Setup the email sender
 email = SMTPMailSender(
@@ -129,6 +129,8 @@ m, y0 = get_model(
     verbose=False,
 )
 
+m, y0 = make_light_into_input(m, y0)
+
 # %%
 # Generate the input light data
 _light_input = np.linspace(10, 20000, n_points)
@@ -153,13 +155,16 @@ light_input = pd.DataFrame(
 light_input.shape[0]
 
 # %%
-def get_outputs(p_values, p_keys, m, y0, compounds=["ATP", "NADPH", "3PGA", "Fd_red"], file_prefix=file_prefix):
+def get_outputs(x, p_keys, m, y0, compounds=["ATP", "NADPH", "3PGA", "Fd_red"], file_prefix=file_prefix):
+    index, p_values = x
 
     # Adapt and initialise the simulator
     s = Simulator(m)
-    p = dict(zip(p_keys, p_values))
+    p = dict(zip(p_keys, p_values.to_numpy()))
     s.update_parameters(p)
     s.initialise(y0)
+
+    # print(index, p)
 
     # Simulate to steady state
     s, t, y = simulate_to_steady_state_custom(
@@ -183,7 +188,7 @@ def get_outputs(p_values, p_keys, m, y0, compounds=["ATP", "NADPH", "3PGA", "Fd_
 
     # Save the residuals
     with open(Path(f"../out/{file_prefix}_intermediates.csv",), "a") as f:
-        f.writelines(f"{','.join([str(x) for x in p_values])},{','.join([str(x) for x in conc.to_numpy()])}\n")
+        f.writelines(f"{index},{','.join([str(x) for x in p_values])},{','.join([str(x) for x in conc.to_numpy()])}\n")
 
     return conc
 
@@ -196,7 +201,7 @@ _get_outputs = partial(
 )
 
 # %%
-input = light_input.to_numpy()
+input = light_input.iterrows()# .to_numpy()
 
 
 with warnings.catch_warnings():
@@ -205,15 +210,15 @@ with warnings.catch_warnings():
     with ProcessPoolExecutor(max_workers=max_workers) as pe:
         res = list(tqdm(
             pe.map(_get_outputs, input),
-            total=input.shape[0],
+            total=light_input.shape[0],
             disable=False
         ))
 
 result = pd.concat(res, axis=1).T.reset_index().drop("index", axis=1)
 
 # Save the parameters and results
-light_input.to_csv(Path(f"../Results/{file_prefix}_results.csv",))
-result.to_csv(Path(f"../Results/{file_prefix}_params.csv",))
+light_input.to_csv(Path(f"../Results/{file_prefix}_params.csv",))
+result.to_csv(Path(f"../Results/{file_prefix}_results.csv",))
 
 email.send_email(
     body=f"Regression run {file_prefix} was successfully finished",
