@@ -8,13 +8,6 @@ from concurrent.futures import ProcessPoolExecutor
 from tqdm.auto import tqdm
 import warnings
 
-from cobra.io import load_json_model, read_sbml_model
-from cobra.flux_analysis.loopless import add_loopless, loopless_solution
-from cobra.flux_analysis import pfba
-
-from cobra import Model, Reaction, Metabolite
-from cobra.manipulation.validate import check_mass_balance
-
 from modelbase.ode import Simulator
 from modelbase.ode import ratefunctions as rf
 
