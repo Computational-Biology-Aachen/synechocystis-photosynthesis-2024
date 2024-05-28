@@ -36,7 +36,7 @@ from SMTPMailSender import SMTPMailSender
 max_workers = 100
 max_workers = np.min([max_workers, os.cpu_count() - 2])
 file_prefix = f"concregression_{datetime.now().strftime('%Y%m%d%H%M')}"
-n_points = 3
+n_points = 10
 
 # Setup the email sender
 email = SMTPMailSender(
