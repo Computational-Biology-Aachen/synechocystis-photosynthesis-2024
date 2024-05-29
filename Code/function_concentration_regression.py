@@ -36,7 +36,7 @@ from SMTPMailSender import SMTPMailSender
 max_workers = 100
 max_workers = np.min([max_workers, os.cpu_count() - 2])
 file_prefix = f"concregression_{datetime.now().strftime('%Y%m%d%H%M')}"
-n_points = 10
+n_points = 3
 
 # Setup the email sender
 email = SMTPMailSender(
@@ -117,6 +117,7 @@ def make_light_into_input(m, y0={}, init_param=None, verbose=True):
     # m = sort_algmodules(m)
     return m, y0
 
+
 # Get the model and add the biomass reaction
 # Get the default model
 _m = get_model(get_y0=False, verbose=False, check_consistency=False)
@@ -158,8 +159,9 @@ biomass_Knoop2015 = biomass_Knoop2015 / nChl_DW # [mmol mol(Chl)^-1]
 
 
 # Get the growth rate of the 633nm (red)-light grown cells
-growth_rate= pd.read_csv("../Code/data/Strainparameters_Zavrel2021.csv", header=0,skiprows=1, index_col=0).loc["Specific growth rate","633"] # [h^-1]
+growth_rate = pd.read_csv("../Code/data/Strainparameters_Zavrel2021.csv", header=0,skiprows=1, index_col=0).loc["Specific growth rate","633"] # [h^-1]
 growth_rate = growth_rate / 3600 # [s^-1]
+
 # Get the default model
 m, y0 = get_model(verbose=False, check_consistency=False)
 
@@ -192,11 +194,11 @@ light_input = np.array(np.meshgrid(
 )).T.reshape(-1,4)
 
 light_input = pd.DataFrame(
-    light_input, 
+    light_input,
     columns = [
-        "complex_abs_ps1", 
-        "complex_abs_ps2", 
-        "complex_abs_pbs", 
+        "complex_abs_ps1",
+        "complex_abs_ps2",
+        "complex_abs_pbs",
         "light_ocp"
     ]
 )
@@ -249,6 +251,7 @@ def get_outputs(x, p_keys, m, y0, compounds=["ATP", "NADPH", "3PGA", "Fd_red"], 
 
     return conc
 
+
 # Partially populate the function
 _get_outputs = partial(
     get_outputs,
@@ -272,7 +275,7 @@ with warnings.catch_warnings():
         ))
 
 result = pd.concat(res, axis=1).T.reset_index().drop("index", axis=1)
-n_successful = n_points-result.isna().any(axis=1).sum()
+n_successful = np.invert(result.isna().any(axis=1)).sum()
 
 # Save the parameters and results
 light_input.to_csv(Path(f"../Results/{file_prefix}_params.csv",))
