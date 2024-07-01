@@ -251,37 +251,37 @@ def get_outputs(x, p_keys, m, y0, compounds=["ATP", "NADPH", "3PGA", "Fd_red"], 
 
     return conc
 
+if __name__ == "__main__":
+    # Partially populate the function
+    _get_outputs = partial(
+        get_outputs,
+        p_keys=light_input.columns,
+        m=m,
+        y0=y0,
+    )
 
-# Partially populate the function
-_get_outputs = partial(
-    get_outputs,
-    p_keys=light_input.columns,
-    m=m,
-    y0=y0,
-)
-
-# %%
-input = light_input.iterrows()# .to_numpy()
+    # %%
+    input = light_input.iterrows()# .to_numpy()
 
 
-with warnings.catch_warnings():
-    warnings.simplefilter("ignore")
-    
-    with ProcessPoolExecutor(max_workers=max_workers) as pe:
-        res = list(tqdm(
-            pe.map(_get_outputs, input),
-            total=light_input.shape[0],
-            disable=False
-        ))
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        
+        with ProcessPoolExecutor(max_workers=max_workers) as pe:
+            res = list(tqdm(
+                pe.map(_get_outputs, input),
+                total=light_input.shape[0],
+                disable=False
+            ))
 
-result = pd.concat(res, axis=1).T.reset_index().drop("index", axis=1)
-n_successful = np.invert(result.isna().any(axis=1)).sum()
+    result = pd.concat(res, axis=1).T.reset_index().drop("index", axis=1)
+    n_successful = np.invert(result.isna().any(axis=1)).sum()
 
-# Save the parameters and results
-light_input.to_csv(Path(f"../Results/{file_prefix}_params.csv",))
-result.to_csv(Path(f"../Results/{file_prefix}_results.csv",))
+    # Save the parameters and results
+    light_input.to_csv(Path(f"../Results/{file_prefix}_params.csv",))
+    result.to_csv(Path(f"../Results/{file_prefix}_results.csv",))
 
-email.send_email(
-    body=f"Regression run {file_prefix} was successfully finished\n{n_successful} simulations were successful",
-    subject="Regression finished"
-)
+    email.send_email(
+        body=f"Regression run {file_prefix} was successfully finished\n{n_successful} simulations were successful",
+        subject="Regression finished"
+    )
