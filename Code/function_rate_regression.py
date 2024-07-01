@@ -29,6 +29,12 @@ from sklearn.multioutput import MultiOutputRegressor
 from sklearn.metrics import mean_squared_error
 from datetime import datetime
 
+import traceback
+import logging
+
+import pebble
+from concurrent import futures
+
 from function_concentration_regression import make_light_into_input
 
 # Import the email notifyer
@@ -54,9 +60,23 @@ email.send_email(
     subject="Regression started"
 )
 
+formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
+def setup_logger(name, log_file, level=logging.INFO):
+    """To setup as many loggers as you want"""
+
+    logger = logging.getLogger(name)
+    logger.setLevel(level)
+
+    if len(logger.handlers) == 0:
+        handler = logging.FileHandler(log_file)        
+        handler.setFormatter(formatter)
+        logger.addHandler(handler)
+
+    return logger
+
 # %%
 # Generate the input light data
-_light_input = np.linspace(10, 1000, n_points)
+_light_input = np.linspace(10, 2000, n_points)
 
 light_input = np.array(np.meshgrid(
     _light_input,
@@ -207,7 +227,7 @@ def get_ss_rates(x, p_keys, all_target_compounds=target_compounds, file_prefix=f
     # Adapt the model to the target compound
     # Get the default model
     m, y0 = get_model(verbose=False, check_consistency=False)
-    m, y0 = make_light_into_input(m, y0)
+    m, y0 = make_light_into_input(m, y0, verbose=False)
 
     # Set the initial 3PGA concentration to zero
     y0["3PGA"] = 0
@@ -246,45 +266,78 @@ def get_ss_rates(x, p_keys, all_target_compounds=target_compounds, file_prefix=f
     # Get the rates 
     if t is not None:
         res = s.get_fluxes_df()
-        conc = res.loc[:, rates].iloc[-1]
+        rates = res.loc[:, rates].iloc[-1]
     else:
-        conc = pd.Series(index=rates)
+        rates = pd.Series(index=rates)
 
     # Save the residuals
     with open(Path(f"../out/{file_prefix}_intermediates.csv",), "a") as f:
-        f.writelines(f"{index},{','.join([str(x) for x in p_values])},{','.join([str(x) for x in conc.to_numpy()])}\n")
+        f.writelines(f"{index},{','.join([str(x) for x in p_values])},{','.join([str(x) for x in rates.to_numpy()])}\n")
 
-    return conc
+    return index, rates
+
+if __name__ == "__main__":
+    # Setup logging
+    InfoLogger = InfoLogger = setup_logger("InfoLogger", Path(f"../out/{file_prefix}_info.log"), level=logging.INFO)
+    ErrorLogger = setup_logger("ErrorLogger", Path(f"../out/{file_prefix}_err.log"), level=logging.ERROR)
+
+    # Log the start of the run
+    InfoLogger.info("Started run")
+
+    input = light_input.iterrows()# .to_numpy()
+    result = pd.DataFrame(index=light_input.index, columns=[f"vout_{x}" for x in target_compounds])
+
+    # Partially populate the function
+    _get_ss_rates = partial(
+        get_ss_rates,
+        p_keys=light_input.columns,
+    )
 
 
-# Partially populate the function
-_get_ss_rates = partial(
-    get_ss_rates,
-    p_keys=light_input.columns,
-)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        
+        try:
+            print(light_input.shape[0])
+            with tqdm(total=light_input.shape[0], disable=True) as pbar:
+                with pebble.ProcessPool(max_workers=max_workers) as pool:
+                    future = pool.map(_get_ss_rates, input, timeout=20)
+                    it = future.result()
+                    
+                    while True:
+                        try:
+                            index, res = next(it)
+                            pbar.update(1)
+                            result.loc[index,:] = res
+                        except futures.TimeoutError:
+                            pbar.update(1)
+                        except StopIteration:
+                            break
+                        except Exception as e:
+                            pbar.update(1)
+                            ErrorLogger.error("Error encountered in residuals\n" + str(traceback.format_exc()))
+                        finally:
+                            pbar.update(1)
 
-# # %%
-input = light_input.iterrows()# .to_numpy()
+            n_successful = np.invert(result.isna().any(axis=1)).sum()
+
+            # Save the parameters and results
+            light_input.to_csv(Path(f"../Results/{file_prefix}_params.csv",))
+            result.to_csv(Path(f"../Results/{file_prefix}_results.csv",))
+
+            InfoLogger.info("Finished run successfully.")
+
+            email.send_email(
+                body=f"Regression run {file_prefix} was successfully finished\n{n_successful} simulations were successful",
+                subject="Regression finished"
+            )
 
 
-with warnings.catch_warnings():
-    warnings.simplefilter("ignore")
-    
-    with ProcessPoolExecutor(max_workers=max_workers) as pe:
-        res = list(tqdm(
-            pe.map(_get_ss_rates, input),
-            total=light_input.shape[0],
-            disable=False
-        ))
-
-result = pd.concat(res, axis=1).T.reset_index().drop("index", axis=1)
-n_successful = np.invert(result.isna().any(axis=1)).sum()
-
-# Save the parameters and results
-light_input.to_csv(Path(f"../Results/{file_prefix}_params.csv",))
-result.to_csv(Path(f"../Results/{file_prefix}_results.csv",))
-
-email.send_email(
-    body=f"Regression run {file_prefix} was successfully finished\n{n_successful} simulations were successful",
-    subject="Regression finished"
-)
+        except Exception as e:
+            ErrorLogger.error("Error encountered in Monte Carlo function\n" + str(traceback.format_exc()))
+            InfoLogger.info("Finished run with Error")
+            
+            email.send_email(
+                body=f"Monte Carlo run {file_prefix} encountered an Error:\n{e}",
+                subject=f"Monte Carlo run Error"
+            )
