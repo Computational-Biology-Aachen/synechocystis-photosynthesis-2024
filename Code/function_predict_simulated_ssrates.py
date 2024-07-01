@@ -37,8 +37,8 @@ from SMTPMailSender import SMTPMailSender
 # Set 
 max_workers = 100
 max_workers = np.min([max_workers, os.cpu_count() - 2])
-file_prefix = f"concregression_{datetime.now().strftime('%Y%m%d%H%M')}"
-n_points = 1
+file_prefix = f"rateregression_{datetime.now().strftime('%Y%m%d%H%M')}"
+n_points = 10
 
 target_compounds = ["ATP", "NADPH", "3PGA", "Fd_red"]
 
