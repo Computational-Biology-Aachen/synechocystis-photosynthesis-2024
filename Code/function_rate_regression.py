@@ -44,7 +44,7 @@ from SMTPMailSender import SMTPMailSender
 max_workers = 100
 max_workers = np.min([max_workers, os.cpu_count() - 2])
 file_prefix = f"rateregression_{datetime.now().strftime('%Y%m%d%H%M')}"
-n_points = 10
+n_points = 2
 
 target_compounds = ["ATP", "NADPH", "3PGA", "Fd_red"]
 
@@ -76,15 +76,34 @@ def setup_logger(name, log_file, level=logging.INFO):
 
 # %%
 # Generate the input light data
-_light_input = np.linspace(10, 2000, n_points)
+_light_input = np.linspace(10, 1000, n_points)
+
+_m = get_model(get_y0=False, verbose=False, check_consistency=False)
+
+## Get the values of the varied pigment contents
+# Get the pigments in the default model
+_m = get_model(get_y0=False, verbose=False, check_consistency=False)
+pigments = _m.parameters["pigment_content"]
+_index = pigments.index
+
+# Get onl the non-chlorophll compounds and reshape to allow for dot product
+pigments = pigments.iloc[1:].to_numpy().reshape(-1,1)
+
+
+# Make dot product with vector sapling a range of possible values 
+pigments = pigments.dot(np.logspace(-np.log10(5), np.log(5), n_points).reshape(1,-1))
+pigments = pd.DataFrame(pigments, index = _index[1:]).T
 
 light_input = np.array(np.meshgrid(
-    _light_input,
-    _light_input,
-    _light_input,
-    _light_input,
-    range(len(target_compounds)),
-)).T.reshape(-1,5)
+    _light_input, # complex_abs_ps1
+    _light_input, # complex_abs_ps2
+    _light_input, # complex_abs_pbs
+    _light_input, # light_ocp
+    pigments["phycocyanin"], # phycocyanin
+    pigments["allophycocyanin"], # allophycocyanin
+    pigments["beta_carotene"], # beta-carotene
+    range(len(target_compounds)), # target_compound
+)).T.reshape(-1,8)
 
 light_input = pd.DataFrame(
     light_input,
@@ -93,6 +112,9 @@ light_input = pd.DataFrame(
         "complex_abs_ps2",
         "complex_abs_pbs",
         "light_ocp",
+        "pigment_phycocyanin",
+        "pigment_allophycocyanin",
+        "pigment_beta_carotene",
         "target_compound"
     ]
 )
@@ -233,11 +255,26 @@ def get_ss_rates(x, p_keys, all_target_compounds=target_compounds, file_prefix=f
     y0["3PGA"] = 0
 
     # Add sinks and caps to the model
-    m = add_sink_allcap(m, target_compound=target_compound, all_target_compounds=all_target_compounds, k=1e5)
+    m = add_sink_allcap(m, target_compound=target_compound, all_target_compounds=all_target_compounds, k=1e6)
+
+    # Create parameters from everything but the pigment contents 
+    _p = dict(zip(p_keys, p_values.to_numpy()))
+    p = {k:v for k,v in _p.items() if not k.startswith("pigment_")}
+
+    # Add the pigment contents
+    p.update({
+        "pigment_content": pd.Series({
+            "chla": 1, # This is always 1
+            "beta_carotene": _p["pigment_beta_carotene"],
+            "phycocyanin": _p["pigment_phycocyanin"],
+            "allophycocyanin":_p["pigment_allophycocyanin"]
+        })
+    })
+
+    print(p)
 
     # Adapt and initialise the simulator
     s = Simulator(m)
-    p = dict(zip(p_keys, p_values.to_numpy()))
     s.update_parameters(p)
     s.initialise(y0)
     # print(index, p)
@@ -292,7 +329,6 @@ if __name__ == "__main__":
         get_ss_rates,
         p_keys=light_input.columns,
     )
-
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
