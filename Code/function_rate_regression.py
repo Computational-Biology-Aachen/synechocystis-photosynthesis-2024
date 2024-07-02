@@ -271,8 +271,6 @@ def get_ss_rates(x, p_keys, all_target_compounds=target_compounds, file_prefix=f
         })
     })
 
-    print(p)
-
     # Adapt and initialise the simulator
     s = Simulator(m)
     s.update_parameters(p)
