@@ -46,7 +46,7 @@ from SMTPMailSender import SMTPMailSender
 max_workers = 100
 max_workers = np.min([max_workers, os.cpu_count() - 2])
 file_prefix = f"rateregression_defaultss_{datetime.now().strftime('%Y%m%d%H%M')}"
-n_points = 2
+n_points = 10
 
 target_compounds = ["ATP", "NADPH", "3PGA", "Fd_red"]
 
@@ -218,7 +218,7 @@ if __name__ == "__main__":
     )
 
     input = light_input.iterrows()# .to_numpy()
-    result = pd.DataFrame(index=light_input.index, columns=[f"vout_{x}" for x in target_compounds])
+    result = pd.DataFrame(index=light_input.index, columns=target_compounds)
 
     # Partially populate the function
     _get_ss_rates = partial(
