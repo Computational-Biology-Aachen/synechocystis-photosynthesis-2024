@@ -120,21 +120,7 @@ light_input = pd.DataFrame(
 )
 
 light_input.shape[0]
-    
 
-_st=m.get_stoichiometric_df()
-all_target_compounds=target_compounds
-
-# Map the target compound to compounds in the model
-target_compound_map={
-    "ATP": "ATP",
-    "NADPH": "NADPH",
-    "Fd_red": "Fd_ox",
-    "3PGA": "3PGA"
-}
-
-# Get the rates that the target compounds are involved in
-target_rates = {k: list(_st.columns[(_st.loc[target_compound_map[k],:]!=0)]) for k in all_target_compounds}
 def get_ss_rates(x, p_keys, all_target_compounds=target_compounds, file_prefix=file_prefix):
     index = x[0]
     p_values = x[1]
@@ -207,6 +193,8 @@ def get_ss_rates(x, p_keys, all_target_compounds=target_compounds, file_prefix=f
             rate = res * _st.loc[target_compound_map[k],:]
             rate = rate[rate>0].sum()
             rates[k] = rate
+
+        rates= pd.Series(rates)
     else:
         rates = pd.Series(index=rates)
 
