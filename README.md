@@ -56,6 +56,7 @@ To set up the conda environment:
    ```
 5. Now you can run the notebooks without worrying about missing dependencies.
 
+By running the file `Notebooks/paper_figures.ipynb` you will perform all simulations on your local machine and recreate all figures. To view the simulation results performed by us, please download the file `Results.zip` from <https://zenodo.org/doi/10.5281/zenodo.8186123>. Then set the two flags `"recalculate_all"` in `paper_figures.ipynb` to `False`.
 <!-- ## Dependencies
 
 The code and notebooks in this repository require the following dependencies:
@@ -72,7 +73,7 @@ You can cite this work by referencing the latest publication:
 Tobias Pfennig, Elena Kullmann, Tomáš Zavřel, Andreas Nakielski, Oliver Ebenhöh, Jan Červený, Gábor Bernát, Anna Matuszyńska  
 PLoS Comput Biol 20(9): e1012445. <https://doi.org/10.1371/journal.pcbi.1012445>
 
-An archived version of this project is also deposited on Zenodo with the DOI <https://doi.org/10.5281/zenodo.8186124>
+An archived version of this project is also deposited on Zenodo with the DOI <https://zenodo.org/doi/10.5281/zenodo.8186123>
 
 ## How to Raise Issues
 
