@@ -41,8 +41,6 @@ plt.rcParams.update(
     {k:v*scaling_factor for k,v in plt.rcParams.items() if (k.endswith("size") or k.endswith("width") or k.endswith("pad")) and isinstance(v, (int, float))}
 )
 
-plt.rcParams['figure.dpi'] = 300
-
 # plt.rcParams.update({
 #     "font.size": 5,
 
@@ -59,7 +57,7 @@ plt.rcParams['figure.dpi'] = 300
 paper_figs = {}
 
 plt.rcParams["figure.max_open_warning"] = 30
-plt.rcParams['figure.dpi'] = 600  # 600 DPI
+plt.rcParams['figure.dpi'] = 300  # 600 DPI
 
 # MAIN FIGURES
 # Create figure 1
