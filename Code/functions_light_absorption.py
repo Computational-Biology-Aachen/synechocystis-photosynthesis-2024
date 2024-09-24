@@ -274,7 +274,7 @@ lights_Fuente = {
 
 # Define functions for getting the effective irradiance
 def _I_depth_INT(I0, depth, absorption_coef, chlorophyll_sample):
-    return I0 * 1/(-absorption_coef * chlorophyll_sample) * _np.exp(-depth * absorption_coef * chlorophyll_sample)
+    return I0 * 1/(-absorption_coef * chlorophyll_sample[-1]) * _np.exp(-depth * absorption_coef * chlorophyll_sample[-1])
 
 def get_mean_sample_light(I0:_Union[_pd.Series, _ArrayLike], depth:float, absorption_coef:_pd.Series, chlorophyll_sample:float, depth0:float=0) -> _pd.Series:
     """Calculate the light experienced by an average cell in a sample

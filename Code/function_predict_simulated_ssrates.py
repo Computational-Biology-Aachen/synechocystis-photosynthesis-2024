@@ -11,9 +11,8 @@ from module_update_phycobilisomes import OCP_absorbed_light
 from functions_light_absorption import get_pigment_absorption, light_spectra, get_mean_sample_light
 from modelbase.ode import Model
 from modelbase.ode import ratefunctions as rf
-
 # Load the regression model
-with open("../Results/rate_regression_model.pickle", "rb") as f:
+with open("../synechocystis-photosynthesis-2024/Results/rate_regression_model.pickle", "rb") as f:
     models = pickle.load(f)
 
 # Define the function that retrieves the predicted concentrations
@@ -146,8 +145,8 @@ def get_influx_rate_estimations(
     # Get the inputs into the predictor function
     pred_input = get_model_inputs(
         cell_density=cell_density, # [cells ml^-1]
-        chlorophyll=chlorophyll, # [µmol l^-1]
-        carotenoids=carotenoids, # [µmol l^-1]
+        chlorophyll=chlorophyll[-1], # [µmol l^-1]
+        carotenoids=carotenoids[-1], # [µmol l^-1]
         phycocyanin=phycocyanin, # [µmol l^-1]
         allophycocyanin=allophycocyanin, # [µmol l^-1]
         light_intensity=light_intensity, # Model
