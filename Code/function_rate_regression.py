@@ -153,11 +153,11 @@ def add_sink_allcap(m, target_compound, all_target_compounds, k=10000):
         # Set the stoichiometry
         if cap == "NADPH":
             cap_stoich = {
-            "NADPH": -1,
-            "Ho": -1/m.get_parameter("bHo"),
+                "NADPH": -1,
+                "Ho": -1/m.get_parameter("bHo"),
             }
-        if cap == "Fd_red":
-            cap_stoich = {"Fd_ox": 1}
+        elif cap == "Fd_red":
+            cap_stoich = {"Fd_ox": 1, "Ho": -1/m.get_parameter("bHo"),}
         else:
             cap_stoich = {cap:-1}
 
