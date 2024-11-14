@@ -162,8 +162,13 @@ def get_influx_rate_estimations(
                 model=model,
                 output_rates=output_rates,
             ))
-        return rates
-
+        rows = [[], [], [], []]
+        # Iterate over each Series in 'rates'
+        for series in rates:
+            # Append each row's value from the current Series to the respective list in 'rows'
+            for i in range(4):
+                rows[i].append(series.iloc[i])
+        return rows
 
     # Get the inputs into the predictor function
     pred_input = get_model_inputs(
