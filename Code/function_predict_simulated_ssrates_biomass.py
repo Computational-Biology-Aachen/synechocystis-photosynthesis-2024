@@ -13,7 +13,7 @@ from module_update_phycobilisomes import OCP_absorbed_light
 from functions_light_absorption import get_pigment_absorption, light_spectra, get_mean_sample_light
 from modelbase.ode import Model
 from modelbase.ode import ratefunctions as rf
-
+import numpy as np
 # Load the regression model
 with open(f"{Path(__file__).parent.resolve()}/../Results/rate_regression_model_biomass.pickle", "rb") as f:
     model = pickle.load(f)
@@ -51,7 +51,10 @@ def get_simulated_ssrates(
         index=pd.Index(output_rates, name="production_rate")
     )
     return res
-    
+def ensure_single_value(value):
+    """Extract the last item if value is a list or tuple, otherwise return the value itself."""
+    return value[0] if isinstance(value, np.ndarray) else value
+
 # Funciton to get the required predictor inputs from Andreas model outputs
 def get_model_inputs(
         cell_density, # [cells ml^-1]
@@ -65,6 +68,12 @@ def get_model_inputs(
         cell_volume = 4e-15, # [l]
     ):
     # Calculate the chlorophyll content
+
+    chlorophyll = ensure_single_value(chlorophyll)
+    carotenoids = ensure_single_value(carotenoids)
+    phycocyanin = ensure_single_value(phycocyanin)
+    allophycocyanin = ensure_single_value(allophycocyanin)
+    cell_density = ensure_single_value(cell_density)
     mg_chlorophyll  = (chlorophyll*893.509/1000) # [mg l^-1]
 
     # Calculate the relative contents of carotenoids, phycocyanin, and allophycocyanin 
@@ -100,7 +109,6 @@ def get_model_inputs(
         * 1e-3 # [mmol µmol^-1]
         * 893.509 # [g mol^-1]
         )
-
     # Correct the light for absorption
     corrected_light = get_mean_sample_light(
         I0=light, 
@@ -130,11 +138,38 @@ def get_influx_rate_estimations(
         model=model, # The predictor models
         output_rates=["ATP", "NADPH", "3PGA", "Fd_red"]
     ):
+
+    if len(chlorophyll)>1:
+        rates = []
+        for i, v in enumerate(chlorophyll):
+            pred_input = get_model_inputs(
+            cell_density=np.array([cell_density[i]*1E6]), # Conversion from [cells nL⁻1] to [cells ml^-1]
+            chlorophyll=np.array([chlorophyll[i]*1000]), # Conversion from [mmol l⁻1] to [µmol l^-1]
+            carotenoids=np.array([carotenoids[i]*1000]), # Conversion from [mmol l⁻1] to [µmol l^-1]
+            phycocyanin=phycocyanin, # [µmol l^-1]
+            allophycocyanin=allophycocyanin, # [µmol l^-1]
+            light_intensity=light_intensity, # Model
+            sample_depth_m=sample_depth_m, # [m] Assuming a cuvette with 1 cm diameter
+            beta_carotene_fraction=beta_carotene_fraction, # [rel] fraction of beta-carotene of cellular carotenoids
+            cell_volume=cell_volume, # [l]
+            )
+            pigment_content = pred_input["pigment_content"]
+            # Predict the simulated rates
+            rates.append(get_simulated_ssrates(
+                light=pred_input["pfd"],
+                pigment_content=pred_input["pigment_content"],
+                ps_ratio=ps_ratio,  # Value in the default model
+                model=model,
+                output_rates=output_rates,
+            ))
+        return rates
+
+
     # Get the inputs into the predictor function
     pred_input = get_model_inputs(
-        cell_density=cell_density, # [cells ml^-1]
-        chlorophyll=chlorophyll[-1], # [µmol l^-1]
-        carotenoids=carotenoids[-1], # [µmol l^-1]
+        cell_density=cell_density*1E6, # [cells ml^-1]
+        chlorophyll=chlorophyll*1000, # [µmol l^-1]
+        carotenoids=carotenoids*1000, # [µmol l^-1]
         phycocyanin=phycocyanin, # [µmol l^-1]
         allophycocyanin=allophycocyanin, # [µmol l^-1]
         light_intensity=light_intensity, # Model
@@ -151,5 +186,4 @@ def get_influx_rate_estimations(
         model=model,
         output_rates=output_rates,
     )
-
     return rates

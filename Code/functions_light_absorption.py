@@ -33,11 +33,9 @@ def get_pigment_association(ps1_ratio:float, beta_carotene_method:str="original"
     chla = chla = _ps_comp.loc[["ratio", "n_chla"],:].prod(axis=0)
     chla = chla/chla.sum()
 
-
     # Beta carotene: Fraction of total pool wih adjustment factor
     beta_carotene = _ps_comp.loc[["ratio", "n_beta_carotene"],:].prod(axis=0)
     beta_carotene = beta_carotene/beta_carotene.sum()
-
     if beta_carotene_method == "original": 
         # Original in Fuente 2021: Fraction of total pool but only 75% in membrane
         beta_carotene = beta_carotene.mul(_ps_comp.loc["beta_carotene_in_membrane", :])
@@ -274,7 +272,7 @@ lights_Fuente = {
 
 # Define functions for getting the effective irradiance
 def _I_depth_INT(I0, depth, absorption_coef, chlorophyll_sample):
-    return I0 * 1/(-absorption_coef * chlorophyll_sample[-1]) * _np.exp(-depth * absorption_coef * chlorophyll_sample[-1])
+    return I0 * 1/(-absorption_coef * chlorophyll_sample) * _np.exp(-depth * absorption_coef * chlorophyll_sample)
 
 def get_mean_sample_light(I0:_Union[_pd.Series, _ArrayLike], depth:float, absorption_coef:_pd.Series, chlorophyll_sample:float, depth0:float=0) -> _pd.Series:
     """Calculate the light experienced by an average cell in a sample
