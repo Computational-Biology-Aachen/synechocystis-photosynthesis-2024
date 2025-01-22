@@ -173,8 +173,8 @@ def get_influx_rate_estimations(
     # Get the inputs into the predictor function
     pred_input = get_model_inputs(
         cell_density=cell_density*1E6, # [cells ml^-1]
-        chlorophyll=chlorophyll*1000, # [µmol l^-1]
-        carotenoids=carotenoids*1000, # [µmol l^-1]
+        chlorophyll=chlorophyll[0]*1000, # [µmol l^-1]
+        carotenoids=carotenoids[0]*1000, # [µmol l^-1]
         phycocyanin=phycocyanin, # [µmol l^-1]
         allophycocyanin=allophycocyanin, # [µmol l^-1]
         light_intensity=light_intensity, # Model
@@ -182,7 +182,6 @@ def get_influx_rate_estimations(
         beta_carotene_fraction=beta_carotene_fraction, # [rel] fraction of beta-carotene of cellular carotenoids
         cell_volume=cell_volume, # [l]
     )
-
     # Predict the simulated rates
     rates = get_simulated_ssrates(
         light=pred_input["pfd"],
@@ -191,4 +190,5 @@ def get_influx_rate_estimations(
         model=model,
         output_rates=output_rates,
     )
+    rates.loc[rates<0] = 0
     return rates
