@@ -78,8 +78,8 @@ def get_model_inputs(
 
     # Calculate the relative contents of carotenoids, phycocyanin, and allophycocyanin 
     relative_carotenoids = (carotenoids*581.5565/1000)/mg_chlorophyll # [mg mg(Chla)^-1]  581.5565 is weighted average mol weight of carotenoids
-    relative_phycocyanin = 10000/mg_chlorophyll # [mg mg(Chla)^-1] FIXME Arbitrary number for now
-    relative_allophycocyanin = 2000/mg_chlorophyll # [mg mg(Chla)^-1] FIXME Arbitrary number for now
+    relative_phycocyanin = 100/mg_chlorophyll # [mg mg(Chla)^-1] FIXME Arbitrary number for now
+    relative_allophycocyanin = 25/mg_chlorophyll # [mg mg(Chla)^-1] FIXME Arbitrary number for now
 
     # Get the pigment content of the cell
     pigment_content = pd.Series({
