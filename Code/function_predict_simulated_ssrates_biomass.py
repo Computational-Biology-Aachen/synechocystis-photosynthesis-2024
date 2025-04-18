@@ -45,6 +45,8 @@ def get_simulated_ssrates(
     # return model_input
     model_input = pd.DataFrame(model_input, index=[1])
 
+    print(model_input)
+
     # Create a container for the results
     res = pd.Series(
         model.predict(model_input).flatten(),
