@@ -71,17 +71,24 @@ def get_model_inputs(
     ):
     # Calculate the chlorophyll content
 
+    molar_weights = { # [g mol^-1]
+        "chlorophyll": 893.509, # source: ?
+        "carotenoids": 581.5565, # weighted average, source: ?
+        "phycocyanin": 232000, # [Da] source: www.agilent.com
+        "allophycocyanin": 105000, # [Da] source: wikipedia.org
+    }
+
     chlorophyll = ensure_single_value(chlorophyll)
     carotenoids = ensure_single_value(carotenoids)
     phycocyanin = ensure_single_value(phycocyanin)
     allophycocyanin = ensure_single_value(allophycocyanin)
     cell_density = ensure_single_value(cell_density)
-    mg_chlorophyll  = (chlorophyll*893.509/1000) # [mg l^-1]
+    mg_chlorophyll  = (chlorophyll*molar_weights["chlorophyll"]/1000) # [mg l^-1]
 
     # Calculate the relative contents of carotenoids, phycocyanin, and allophycocyanin 
-    relative_carotenoids = (carotenoids*581.5565/1000)/mg_chlorophyll # [mg mg(Chla)^-1]  581.5565 is weighted average mol weight of carotenoids
-    relative_phycocyanin = 100/mg_chlorophyll # [mg mg(Chla)^-1] FIXME Arbitrary number for now
-    relative_allophycocyanin = 25/mg_chlorophyll # [mg mg(Chla)^-1] FIXME Arbitrary number for now
+    relative_carotenoids = (carotenoids*molar_weights["carotenoids"]/1000)/mg_chlorophyll # [mg mg(Chla)^-1]  581.5565 is weighted average mol weight of carotenoids
+    relative_phycocyanin = (phycocyanin*molar_weights["phycocyanin"]/1000)/mg_chlorophyll # [mg mg(Chla)^-1]
+    relative_allophycocyanin = (allophycocyanin*molar_weights["allophycocyanin"]/1000)/mg_chlorophyll # [mg mg(Chla)^-1]
 
     # Get the pigment content of the cell
     pigment_content = pd.Series({
@@ -131,8 +138,8 @@ def get_influx_rate_estimations(
         cell_density, # [cells ml^-1]
         chlorophyll, # [µmol l^-1]
         carotenoids, # [µmol l^-1]
-        phycocyanin=None, # [µmol l^-1]
-        allophycocyanin=None, # [µmol l^-1]
+        phycocyanin, # [µmol l^-1]
+        allophycocyanin, # [µmol l^-1]
         ps_ratio:float=5.9,
         beta_carotene_fraction=0.26, # [rel] fraction of beta-carotene of cellular carotenoids
         sample_depth_m=0.01, # [m] Assuming a cuvette with 1 cm diameter
@@ -148,14 +155,15 @@ def get_influx_rate_estimations(
             cell_density=np.array([cell_density[i]*1E6]), # Conversion from [cells nL⁻1] to [cells ml^-1]
             chlorophyll=np.array([chlorophyll[i]*1000]), # Conversion from [mmol l⁻1] to [µmol l^-1]
             carotenoids=np.array([carotenoids[i]*1000]), # Conversion from [mmol l⁻1] to [µmol l^-1]
-            phycocyanin=phycocyanin, # [µmol l^-1]
-            allophycocyanin=allophycocyanin, # [µmol l^-1]
+            phycocyanin=np.array([phycocyanin[i]*1000]), # Conversion from [mmol l⁻1] to [µmol l^-1]
+            allophycocyanin=np.array([allophycocyanin[i]*1000]), # Conversion from [mmol l⁻1] to [µmol l^-1]
             light_intensity=light_intensity, # Model
             sample_depth_m=sample_depth_m, # [m] Assuming a cuvette with 1 cm diameter
             beta_carotene_fraction=beta_carotene_fraction, # [rel] fraction of beta-carotene of cellular carotenoids
             cell_volume=cell_volume, # [l]
             )
             pigment_content = pred_input["pigment_content"]
+            # print(pigment_content)
             # Predict the simulated rates
             rates.append(get_simulated_ssrates(
                 light=pred_input["pfd"],
@@ -177,8 +185,8 @@ def get_influx_rate_estimations(
         cell_density=cell_density*1E6, # [cells ml^-1]
         chlorophyll=chlorophyll[0]*1000, # [µmol l^-1]
         carotenoids=carotenoids[0]*1000, # [µmol l^-1]
-        phycocyanin=phycocyanin, # [µmol l^-1]
-        allophycocyanin=allophycocyanin, # [µmol l^-1]
+        phycocyanin=phycocyanin[0]*1000, # [µmol l^-1]
+        allophycocyanin=allophycocyanin[0]*1000, # [µmol l^-1]
         light_intensity=light_intensity, # Model
         sample_depth_m=sample_depth_m, # [m] Assuming a cuvette with 1 cm diameter
         beta_carotene_fraction=beta_carotene_fraction, # [rel] fraction of beta-carotene of cellular carotenoids
@@ -193,4 +201,4 @@ def get_influx_rate_estimations(
         output_rates=output_rates,
     )
     rates.loc[rates<0] = 0
-    return rates
+    return pred_input, rates
