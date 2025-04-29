@@ -45,7 +45,7 @@ def get_simulated_ssrates(
     # return model_input
     model_input = pd.DataFrame(model_input, index=[1])
 
-    print(model_input)
+    #print(model_input)
 
     # Create a container for the results
     res = pd.Series(
@@ -153,8 +153,8 @@ def get_influx_rate_estimations(
             cell_density=np.array([cell_density[i]*1E6]), # Conversion from [cells nL⁻1] to [cells ml^-1]
             chlorophyll=np.array([chlorophyll[i]*1000]), # Conversion from [mmol l⁻1] to [µmol l^-1]
             carotenoids=np.array([carotenoids[i]*1000]), # Conversion from [mmol l⁻1] to [µmol l^-1]
-            phycocyanin=np.array([phycocyanin[i]]), # [mg l^-1]
-            allophycocyanin=np.array([allophycocyanin[i]]), # [mg l^-1]
+            phycocyanin=phycocyanin[0], # [mg l^-1]
+            allophycocyanin=allophycocyanin[0], # [mg l^-1]
             light_intensity=light_intensity, # Model
             sample_depth_m=sample_depth_m, # [m] Assuming a cuvette with 1 cm diameter
             beta_carotene_fraction=beta_carotene_fraction, # [rel] fraction of beta-carotene of cellular carotenoids
@@ -199,4 +199,4 @@ def get_influx_rate_estimations(
         output_rates=output_rates,
     )
     rates.loc[rates<0] = 0
-    return pred_input, rates
+    return rates
