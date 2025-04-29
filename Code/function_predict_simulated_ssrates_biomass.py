@@ -72,8 +72,8 @@ def get_model_inputs(
     # Calculate the chlorophyll content
 
     molar_weights = { # [g mol^-1]
-        "chlorophyll": 893.509, # source: ?
-        "carotenoids": 581.5565, # weighted average, source: ?
+        "chlorophyll": 893.509, # source: https://www.ebi.ac.uk/chebi/searchId.do?chebiId=CHEBI:189419
+        "carotenoids": 536.8726, # molar weight beta carotene, source: https://webbook.nist.gov/cgi/cbook.cgi?ID=C7235407
     }
 
     chlorophyll = ensure_single_value(chlorophyll)
@@ -84,7 +84,7 @@ def get_model_inputs(
     mg_chlorophyll  = (chlorophyll*molar_weights["chlorophyll"]/1000) # [mg l^-1]
 
     # Calculate the relative contents of carotenoids, phycocyanin, and allophycocyanin 
-    relative_carotenoids = (carotenoids*molar_weights["carotenoids"]/1000)/mg_chlorophyll # [mg mg(Chla)^-1]  581.5565 is weighted average mol weight of carotenoids
+    relative_carotenoids = (carotenoids*molar_weights["carotenoids"]/1000)/mg_chlorophyll # [mg mg(Chla)^-1] 
     relative_phycocyanin = phycocyanin/mg_chlorophyll # [mg mg(Chla)^-1]
     relative_allophycocyanin = allophycocyanin/mg_chlorophyll # [mg mg(Chla)^-1]
 
