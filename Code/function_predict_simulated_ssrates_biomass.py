@@ -136,8 +136,8 @@ def get_influx_rate_estimations(
         cell_density, # [cells ml^-1]
         chlorophyll, # [µmol l^-1]
         carotenoids, # [µmol l^-1]
-        phycocyanin = [53180], # [mg l^-1]
-        allophycocyanin = [24076], # [mg l^-1]
+        phycocyanin = 53180, # [mg l^-1]
+        allophycocyanin = 24076, # [mg l^-1]
         ps_ratio:float=5.9,
         beta_carotene_fraction=0.26, # [rel] fraction of beta-carotene of cellular carotenoids
         sample_depth_m=0.01, # [m] Assuming a cuvette with 1 cm diameter
@@ -153,8 +153,8 @@ def get_influx_rate_estimations(
             cell_density=np.array([cell_density[i]*1E6]), # Conversion from [cells nL⁻1] to [cells ml^-1]
             chlorophyll=np.array([chlorophyll[i]*1000]), # Conversion from [mmol l⁻1] to [µmol l^-1]
             carotenoids=np.array([carotenoids[i]*1000]), # Conversion from [mmol l⁻1] to [µmol l^-1]
-            phycocyanin=phycocyanin[0], # [mg l^-1]
-            allophycocyanin=allophycocyanin[0], # [mg l^-1]
+            phycocyanin=phycocyanin, # [mg l^-1]
+            allophycocyanin=allophycocyanin, # [mg l^-1]
             light_intensity=light_intensity, # Model
             sample_depth_m=sample_depth_m, # [m] Assuming a cuvette with 1 cm diameter
             beta_carotene_fraction=beta_carotene_fraction, # [rel] fraction of beta-carotene of cellular carotenoids
@@ -183,8 +183,8 @@ def get_influx_rate_estimations(
         cell_density=cell_density*1E6, # [cells ml^-1]
         chlorophyll=chlorophyll[0]*1000, # [µmol l^-1]
         carotenoids=carotenoids[0]*1000, # [µmol l^-1]
-        phycocyanin=phycocyanin[0], # [mg l^-1]
-        allophycocyanin=allophycocyanin[0], # [mg l^-1]
+        phycocyanin=phycocyanin, # [mg l^-1]
+        allophycocyanin=allophycocyanin, # [mg l^-1]
         light_intensity=light_intensity, # Model
         sample_depth_m=sample_depth_m, # [m] Assuming a cuvette with 1 cm diameter
         beta_carotene_fraction=beta_carotene_fraction, # [rel] fraction of beta-carotene of cellular carotenoids
