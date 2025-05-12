@@ -41,7 +41,7 @@ from function_concentration_regression import make_light_into_input
 from SMTPMailSender import SMTPMailSender
 
 # Set 
-max_workers = 100
+max_workers = 75
 max_workers = np.min([max_workers, os.cpu_count() - 2])
 file_prefix = f"rateregression_biomass_{datetime.now().strftime('%Y%m%d%H%M')}"
 n_points = 15
