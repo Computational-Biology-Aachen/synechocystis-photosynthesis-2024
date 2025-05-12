@@ -44,7 +44,7 @@ from SMTPMailSender import SMTPMailSender
 max_workers = 100
 max_workers = np.min([max_workers, os.cpu_count() - 2])
 file_prefix = f"rateregression_biomass_{datetime.now().strftime('%Y%m%d%H%M')}"
-n_points = 5
+n_points = 15
 
 target_compounds = ["ATP", "NADPH", "3PGA", "Fd_red"]
 target_fluxes = ["vBiomass", "vATPconsumption"]
@@ -109,7 +109,7 @@ def setup_logger(name, log_file, level=logging.INFO):
 
 # %%
 # Generate the input light data
-_light_input = np.linspace(10, 1000, n_points)
+_light_input = np.logspace(-1, 4, n_points)
 
 _m = get_model(get_y0=False, verbose=False, check_consistency=False)
 
