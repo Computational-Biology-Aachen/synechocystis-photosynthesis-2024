@@ -33,10 +33,10 @@ def OCP_absorbed_light(
 
 # Define OCP activation as active, light involved process with passive reversal
 def OCPactivation(
-    OCP, pfd, kOCPactivation, kOCPdeactivation, lcf, OCPmax=1
+    OCP, pfd, kOCPactivation, kOCPdeactivation, lcf, _OCP_absorbed_light, OCPmax=1
 ):  # >> changed: added <<
     return (
-        OCP_absorbed_light(pfd) * lcf * kOCPactivation * (OCPmax - OCP)
+        _OCP_absorbed_light * lcf * kOCPactivation * (OCPmax - OCP)
         - kOCPdeactivation * OCP
     )
 
@@ -140,12 +140,18 @@ def add_OCP(m, y0={}, init_param=None, verbose=True):
 
     m.add_parameters(p)
 
+    m.add_derived_parameter(
+        parameter_name="OCP_absorbed_light",
+        function=OCP_absorbed_light,
+        parameters=["pfd"],
+    )
+
     # Add OCP activation
     m.add_reaction_from_args(  # >> changed: added <<
         rate_name="OCPactivation",
         function=OCPactivation,
         stoichiometry={"OCP": 1},
-        args=["OCP", "pfd", "kOCPactivation", "kOCPdeactivation", "lcf", "OCPmax"],
+        args=["OCP", "pfd", "kOCPactivation", "kOCPdeactivation", "lcf", "OCP_absorbed_light", "OCPmax"],
     )
 
     # >> changed: replaced calculate_excite_ps and the depricated light function with an updated ps_normabsorption <<
