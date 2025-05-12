@@ -28,6 +28,10 @@ def simulate_to_steady_state_custom(
     | None = {"t_end": 1e6, "tolerances": [[None, 1e-6]], "verbose": False},
     rel_norm: bool = False,
     return_simulator=False,
+    retry_unsuccessful=False,
+    return_unsuccessful=True,
+    retry_kwargs=None,
+    verbose=False,
     **integrator_kwargs,
 ):
     t_end = simulation_kwargs["t_end"]
@@ -35,10 +39,20 @@ def simulate_to_steady_state_custom(
     verbose = simulation_kwargs["verbose"]
 
     try:
-        t, y = s.simulate(t_end, **integrator_kwargs)
+        # t, y = s.simulate(t_end, **integrator_kwargs)
+        s, t, y = fnc.simulate_with_retry(
+            s,
+            integrator_kwargs=integrator_kwargs,
+            retry_kwargs=retry_kwargs,
+            retry_unsuccessful=retry_unsuccessful,
+            return_unsuccessful=return_unsuccessful,
+            verbose=verbose,
+            t_end=t_end,
+            steps=100 # Testwise, have always the last 1% of the time range evaluated
+        )
         if t is None:
             if verbose:
-                print("simulation failed")
+                warnings.warn("simulation failed")
             return (s, None, None) if return_simulator else (None, None)
 
         res = s.get_results_df().iloc[-2:, :]
@@ -60,19 +74,17 @@ def simulate_to_steady_state_custom(
                 diff = diff / res.iloc[-1].loc[diff.index]
             if np.linalg.norm(diff.dropna(), ord=2) > tol[1]:
                 if verbose:
-                    print("steady state not reached")
-                    print(diff)
+                    warnings.warn(f"steady state not reached\n{diff}")
                 return (s, None, None) if return_simulator else (None, None)
         return (
             (s, np.array([t[-1]]), np.array([y[-1]]))
             if return_simulator
             else (np.array([t[-1]]), np.array([y[-1]]))
         )
-    except:
+    except Exception as e:
+        if verbose:
+            warnings.warn(f"simulation failed:\n{e}")
         return (s, None, None) if return_simulator else (None, None)
-    if verbose:
-        print("failed for other reason")
-    return (s, None, None) if return_simulator else (None, None)
 
 
 def _find_steady_state(

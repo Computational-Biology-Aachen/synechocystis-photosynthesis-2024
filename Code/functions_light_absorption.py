@@ -10,6 +10,7 @@ from numpy.typing import ArrayLike as _ArrayLike
 from typing import Union as _Union
 from warnings import warn as _warn
 from re import sub as _sub
+from scipy.interpolate import interp1d as _interp1d
 # %%
 _MODPATH = (_Path(__file__)/"..").resolve()
 _DATAPATH = _MODPATH / "data/"
@@ -142,6 +143,29 @@ def light_spectra(which:str=None, intensity:float=1.0)-> _npt.ArrayLike:
         return _lights_df.loc[:,which] * intensity
     except KeyError as e:
         raise KeyError(f"'{e}' is not a provided spectrum")
+
+def light_from_data(df, new_wavelengths=_np.arange(400,701), interpolation="linear", rmse=True, normalize=True):
+    # Fit a linear interpolation model
+    lin_model = _interp1d(df.index, df.values, kind=interpolation)
+
+    # Evaluate the spline at specific x values
+    points = lin_model(new_wavelengths)
+
+    # Calcualte the rmse of the linear model from the interpolated points to the original data
+    if rmse:
+        old_wavelengths = _np.array(df.index)
+        old_wavelengths = old_wavelengths[_np.logical_and(old_wavelengths > new_wavelengths.min(), old_wavelengths < new_wavelengths.max())]
+        res_model = _interp1d(new_wavelengths, points, kind=interpolation)
+        res = res_model(old_wavelengths)
+        res = _np.mean((res - df[old_wavelengths].values)**2)**0.5
+
+        print(f"RMSE of {interpolation} interpolation: {res:.2f}")
+
+    # Normalize the pfd to 1
+    if normalize:
+        points = points / _simpson(points)
+
+    return _pd.Series(points, index=new_wavelengths)
 
 def import_spectrum_from_file(
         file, 

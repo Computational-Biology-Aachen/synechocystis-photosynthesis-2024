@@ -78,6 +78,57 @@ def get_plt_default(name, **kwargs):
     return res
 
 
+# Simulate a model with option of retry
+def simulate_with_retry(s, integrator_kwargs, retry_kwargs, index=None, retry_unsuccessful=True, return_unsuccessful=True, verbose=True, **simulator_kwargs):
+    """Simulate a modelbase model using the integrator settings in integrator_kwargs. If the simulator is unsuccessful, retry with one or more sets of alternative integrator settings in retry_kwargs
+
+    Args:
+        s (Simulator): _description_
+        integrator_kwargs (dict): integrator settings to be passed into the simulate function
+        retry_kwargs (dict,list): integrator settings to be passed into the simulate function upon retry. If a list is given, the settings are tried in order
+        index (int, optional): an index to be printed in warnings. Defaults to None.
+        retry_unsuccessful (bool, optional): should the simulation be retried if failed. Defaults to True.
+        return_unsuccessful (bool, optional): should the simulator be returned if the simulation failed, otherwise None is returned. Defaults to True.
+        verbose (bool, optional): should warnings be printed. Defaults to True.
+
+    Returns:
+        tuple: Simulator, simulation time vector, and concentration array
+    """
+    # Try default simulation
+    t, y = s.simulate(**simulator_kwargs, **integrator_kwargs)
+
+    if t is None:
+        if retry_unsuccessful:
+            # If only a single set of retry kwargs is given, make pack them into a list
+            if isinstance(retry_kwargs, dict):
+                retry_kwargs = [retry_kwargs]
+            
+            # Retry the simulation with each set of retry kwargs
+            for j, _retry_kwargs in enumerate(retry_kwargs):
+                if verbose:
+                    warn(f"Retrying simulation {index if index is not None else ''} to t = {simulator_kwargs.get('t_end')} with retry_kwargs ({j})... ")
+                _integrator_kwargs = integrator_kwargs.copy()
+                _integrator_kwargs.update(_retry_kwargs)
+
+                t, y = s.simulate(**simulator_kwargs, **_integrator_kwargs)
+            
+                # If a simulation succeeded, break the retry cycle
+                if t is not None:
+                    return s, t, y
+        
+        # If the function arrives here, all simulation attempts failed
+        # If the requested return the unsuccessful simulator, else None
+        if return_unsuccessful:
+            warn(f"Simulation {index if index is not None else ''} to t = {simulator_kwargs.get('t_end')} was unsuccessful")
+            return s, None, None
+        else:
+            return None, None, None
+    
+    # If the simulation was successful, return the simulator
+    else:
+        return s, t, y
+
+
 ### General overview plots ###
 def plot_overview(s):
     # Get the plottable compounds
@@ -685,6 +736,8 @@ def add_lightbar(
     spectrum_maskalpha=0.6,
     pad_top=0,
     y_pos=None,
+    box_linewidth=1,
+    ticks_linewidth=1.5,
 ):
     # Get all the different modelled times and lights
     alltimes = s.get_time()
@@ -853,7 +906,7 @@ def add_lightbar(
             spec_pos[[1, 1]],
             spec_pos[[2, 3]],
             color="black",
-            linewidth=1,
+            linewidth=box_linewidth,
             scalex=False,
             scaley=False,
         )
@@ -866,7 +919,7 @@ def add_lightbar(
             edgecolor="black",
             alpha=1,
             in_layout=True,
-            linewidth=1,
+            linewidth=box_linewidth,
         )
     )
 
@@ -875,7 +928,7 @@ def add_lightbar(
         [tickpos, tickpos],
         [tick_bottom, tick_bottom + float(np.diff(np.array(axylim)) * 0.015)],
         color="black",
-        linewidth=1.5,
+        linewidth=ticks_linewidth,
         scalex=False,
         scaley=False,
     )
@@ -1405,9 +1458,9 @@ def plot_model_comparison(s1, s2, comp):
         # If there is no difference skip the plotting
         if len(elms) == 0:
             if nam == "cmps":
-                print("No differing compounds")
+                warn("No differing compounds")
             else:
-                print("No differing fluxes")
+                warn("No differing fluxes")
             continue
 
         # Define the elements to be plotted
@@ -1745,6 +1798,8 @@ def simulate_protocol(
     return_unsuccessful=False,
     retry_unsuccessful=False,
     retry_kwargs=simulator_kwargs["loose"],
+    n_timepoints = None,
+    verbose = False,
     **integrator_kwargs,
 ):
     # Set the current end time
@@ -1771,22 +1826,19 @@ def simulate_protocol(
         # Get the new light parameter
         pfd = get_light(row)
         s.update_parameter("pfd", pfd)
-        t, y = s.simulate(row["t_end"], **integrator_kwargs)
+
+        # Simulate until the given end-time
+        # If a number of points to be evaluated is given, generate the necessary points
+        if n_timepoints is None:
+            # s, t, y = s.simulate(row["t_end"], **integrator_kwargs)
+            s, t, y = simulate_with_retry(s, t_end=row["t_end"], integrator_kwargs=integrator_kwargs, retry_kwargs=retry_kwargs, verbose=verbose)
+        else:
+            # t, y = s.simulate(row["t_end"], steps=n_timepoints, **integrator_kwargs)
+            s, t, y = simulate_with_retry(s, t_end=row["t_end"], steps=n_timepoints, integrator_kwargs=integrator_kwargs, retry_kwargs=retry_kwargs, verbose=verbose)
 
         if t is None:
-            warn(f"simulation step {i} to t = {row['t_end']} was unsuccessfull")
-            if retry_unsuccessful:
-                print("Retrying with retry_kwargs... ", end="")
-                _integrator_kwargs = integrator_kwargs.copy()
-                _integrator_kwargs.update(retry_kwargs)
-                s.update_parameter("pfd", pfd)
-                t, y = s.simulate(row["t_end"], **_integrator_kwargs)
-                if t is not None:
-                    print("success")
-                else:
-                    print("failed")
-
-        if t is None:
+            if verbose:
+                warn(f"protocol simulation unsuccessful, failed at step {i} to t = {row['t_end']}")
             if return_unsuccessful:
                 s.update_parameter("pfd", pfd)
                 return s

@@ -6,6 +6,9 @@
 Figures/*
 Results/*
 out/*
+!Results/README.md
 
 # ignore vscode files
 .vscode
+
+test.ipynb

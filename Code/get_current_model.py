@@ -1,6 +1,11 @@
 # Define the newest version of the model
 from modelbase.ode import Model
 
+from pathlib import Path
+import sys
+
+sys.path.append(str(Path(__file__).parent))
+
 from module_atp_synthase import add_ATPase
 from module_consistency_check import add_consistency_check
 from module_consuming_reactions import add_consuming_reactions
