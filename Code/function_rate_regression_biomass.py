@@ -44,7 +44,7 @@ from SMTPMailSender import SMTPMailSender
 max_workers = 75
 max_workers = np.min([max_workers, os.cpu_count() - 2])
 file_prefix = f"rateregression_biomass_{datetime.now().strftime('%Y%m%d%H%M')}"
-n_points = 15
+n_points = 5
 
 target_compounds = ["ATP", "NADPH", "3PGA", "Fd_red"]
 target_fluxes = ["vBiomass", "vATPconsumption"]
@@ -291,10 +291,10 @@ if __name__ == "__main__":
 
 
         except Exception as e:
-            ErrorLogger.error("Error encountered in Monte Carlo function\n" + str(traceback.format_exc()))
+            ErrorLogger.error("Error encountered in Regression function\n" + str(traceback.format_exc()))
             InfoLogger.info("Finished run with Error")
             
             email.send_email(
-                body=f"Monte Carlo run {file_prefix} encountered an Error:\n{e}",
-                subject=f"Monte Carlo run Error"
+                body=f"Regression run {file_prefix} encountered an Error:\n{e}",
+                subject=f"Regression run Error"
             )
