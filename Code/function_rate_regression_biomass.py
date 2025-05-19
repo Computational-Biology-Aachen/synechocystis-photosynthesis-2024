@@ -108,8 +108,6 @@ def setup_logger(name, log_file, level=logging.INFO):
     return logger
 
 # %%
-# Generate the input light data
-_light_input = np.logspace(-1, 4, n_points)
 
 _m = get_model(get_y0=False, verbose=False, check_consistency=False)
 
@@ -127,11 +125,21 @@ pigments = pigments.iloc[1:].to_numpy().reshape(-1,1)
 pigments = pigments.dot(np.logspace(-np.log10(5), np.log(5), n_points).reshape(1,-1))
 pigments = pd.DataFrame(pigments, index = _index[1:]).T
 
+# light_input = np.array(np.meshgrid(
+#     _light_input, # complex_abs_ps1
+#     _light_input, # complex_abs_ps2
+#     _light_input, # complex_abs_pbs
+#     _light_input, # light_ocp
+#     pigments["phycocyanin"], # phycocyanin
+#     pigments["allophycocyanin"], # allophycocyanin
+#     pigments["beta_carotene"], # beta-carotene
+# )).T.reshape(-1,7)
+
 light_input = np.array(np.meshgrid(
-    _light_input, # complex_abs_ps1
-    _light_input, # complex_abs_ps2
-    _light_input, # complex_abs_pbs
-    _light_input, # light_ocp
+    np.linspace(0.1, 5000, n_points), # complex_abs_ps1
+    np.linspace(0.01, 500, n_points), # complex_abs_ps2
+    np.linspace(0.1,5000, n_points), # complex_abs_pbs
+    np.linspace(0.001, 100, n_points), # light_ocp
     pigments["phycocyanin"], # phycocyanin
     pigments["allophycocyanin"], # allophycocyanin
     pigments["beta_carotene"], # beta-carotene
